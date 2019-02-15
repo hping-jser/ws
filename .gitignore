@@ -1,8 +1,5 @@
+node_modules/
+.nyc_output/
+coverage/
+.vscode/
 npm-debug.log
-node_modules
-.*.swp
-.lock-*
-build
-coverage
-
-builderror.log

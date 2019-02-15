@@ -1,59 +1,37 @@
+'use strict';
 
-(function(){
+const https = require('https');
+const fs = require('fs');
 
-    "use strict";
+const WebSocket = require('..');
 
-    var fs = require('fs');
+const server = https.createServer({
+  cert: fs.readFileSync('../test/fixtures/certificate.pem'),
+  key: fs.readFileSync('../test/fixtures/key.pem')
+});
 
-    // you'll probably load configuration from config
-    var cfg = {
-        ssl: true,
-        port: 8080,
-        ssl_key: '/path/to/you/ssl.key',
-        ssl_cert: '/path/to/you/ssl.crt'
-    };
+const wss = new WebSocket.Server({ server });
 
-    var httpServ = ( cfg.ssl ) ? require('https') : require('http');
+wss.on('connection', function connection (ws) {
+  ws.on('message', function message (msg) {
+    console.log(msg);
+  });
+});
 
-    var WebSocketServer   = require('../').Server;
+server.listen(function listening () {
+  //
+  // If the `rejectUnauthorized` option is not `false`, the server certificate
+  // is verified against a list of well-known CAs. An 'error' event is emitted
+  // if verification fails.
+  //
+  // The certificate used in this example is self-signed so `rejectUnauthorized`
+  // is set to `false`.
+  //
+  const ws = new WebSocket(`wss://localhost:${server.address().port}`, {
+    rejectUnauthorized: false
+  });
 
-    var app      = null;
-
-    // dummy request processing
-    var processRequest = function( req, res ) {
-
-        res.writeHead(200);
-        res.end("All glory to WebSockets!\n");
-    };
-
-    if ( cfg.ssl ) {
-
-        app = httpServ.createServer({
-
-            // providing server with  SSL key/cert
-            key: fs.readFileSync( cfg.ssl_key ),
-            cert: fs.readFileSync( cfg.ssl_cert )
-
-        }, processRequest ).listen( cfg.port );
-
-    } else {
-
-        app = httpServ.createServer( processRequest ).listen( cfg.port );
-    }
-
-    // passing or reference to web server so WS would knew port and SSL capabilities
-    var wss = new WebSocketServer( { server: app } );
-
-
-    wss.on( 'connection', function ( wsConnect ) {
-
-        wsConnect.on( 'message', function ( message ) {
-
-            console.log( message );
-
-        });
-
-    });
-
-
-}());
+  ws.on('open', function open () {
+    ws.send('All glory to WebSockets!');
+  });
+});
